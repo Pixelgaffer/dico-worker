@@ -1,3 +1,4 @@
+#include <error.h>
 #include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,9 +9,27 @@
 #include <string>
 using namespace std;
 
+#include <do-task.pb.h>
 #include <handshake.pb.h>
 #include <self-describing-message.pb.h>
 using namespace dicoprotos;
+
+template<typename MessageType>
+string serialize(MessageType m, SelfDescribingMessage_MessageType mt)
+{
+	SelfDescribingMessage sdm;
+	sdm.set_type(mt);
+	string d = m.SerializeAsString();
+	sdm.set_data(d.data(), d.size());
+	d = sdm.SerializeAsString();
+	int s = d.size();
+	d = (char)( s        & 0xFF) + d;
+	d = (char)((s >>  8) & 0xFF) + d;
+	d = (char)((s >> 16) & 0xFF) + d;
+	d = (char)((s >> 24) & 0xFF) + d;
+	cout << "header: " << (int)d[0] << " " << (int)d[1] << " " << (int)d[2] << " " << (int)d[3] << " (=" << s << ")" << endl;
+	return d;
+}
 
 int main(int argc, char **argv)
 {
@@ -60,15 +79,54 @@ int main(int argc, char **argv)
 	// send handshake
 	Handshake h;
 	h.set_runs_tasks(true);
-	string hd = h.SerializeAsString();
-	SelfDescribingMessage sdm;
-	sdm.set_type(SelfDescribingMessage::HANDSHAKE);
-	sdm.set_data(hd.data(), hd.length());
-	if (!sdm.SerializeToFileDescriptor(sockfd))
+	string d = serialize(h, SelfDescribingMessage::HANDSHAKE);
+	if (write(sockfd, d.data(), d.length()) == -1)
 	{
-		cerr << "Failed to send handshake" << endl;
+		perror("Failed to send handshake");
 		close(sockfd);
 		return 1;
 	}
 	cerr << "Successfully sent handshake" << endl;
+	
+	while (true)
+	{
+		int len = 0;
+		char p, *buf = 0;
+		int read;
+		for (int i = 0; i<4 || len>i-4; i++)
+		{
+			if ((read = recv(sockfd, &p, 1, 0)) < 0)
+				break;
+			if (i < 4)
+			{
+				len = len | (p << (24 - 8*i));
+				continue;
+			}
+			
+			if (!buf)
+				buf = new char[len];
+			buf[i-4] = p;
+		}
+		
+		SelfDescribingMessage sdm;
+		sdm.ParseFromArray(buf, len);
+		switch (sdm.type())
+		{
+		case SelfDescribingMessage::DO_TASK: {
+				DoTask task;
+				task.ParseFromString(sdm.data());
+				cout << "received task with id " << task.id() << endl;
+			}
+			break;
+		default:
+			cerr << "Unknown message type received: " << sdm.type() << endl;
+		}
+	}
 }
+
+/*
+[12:32:38] Flo B.: Der Worker verbindet sich zu port 7778 und schickt nen Handshake.
+Dann wartet er auf ein DoTask Paket und fängt den Task an.
+Falls der Task gefailed hat er ein TaskStatusUpdate.FAILED
+Wenn der Task fertig ist schickt er ein TaskResult Paket.
+ */
