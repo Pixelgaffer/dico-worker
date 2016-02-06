@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+
+# text editor backups
+*~
+\#*#
+
+# build
+*.user
+build/
+build-*/
