@@ -13,5 +13,5 @@ addons:
       - libprotobuf-dev
 
 script:
-  - cmake
+  - cmake .
   - make -j2
