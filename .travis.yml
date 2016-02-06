@@ -1,0 +1,17 @@
+language: c++
+
+compiler:
+  - clang
+  - gcc
+
+sudo: false
+addons:
+  apt:
+    packages:
+      - protobuf-compiler
+      - protobuf-c-compiler
+      - libprotobuf-dev
+
+script:
+  - cmake
+  - make -j2
