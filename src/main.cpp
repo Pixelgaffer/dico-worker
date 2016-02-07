@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags    = 0;
 	hints.ai_protocol = 0;
-	if (ret = (getaddrinfo(host.data(), port.data(), &hints, &result)) != 0)
+	if ((ret = (getaddrinfo(host.data(), port.data(), &hints, &result))) != 0)
 	{
 		cerr << "Error while looking up " << host << ": " << gai_strerror(ret) << endl;
 		return 1;
@@ -96,8 +96,11 @@ int main(int argc, char **argv)
 		int read;
 		for (int i = 0; i<4 || len>i-4; i++)
 		{
-			if ((read = recv(sockfd, &p, 1, 0)) < 0)
-				break;
+			if ((read = recv(sockfd, &p, 1, 0)) <= 0)
+			{
+				cerr << "remote closed connection" << endl;
+				return 0;
+			}
 			if (i < 4)
 			{
 				len = len | (p << (24 - 8*i));
