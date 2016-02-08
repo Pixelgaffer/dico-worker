@@ -12,11 +12,18 @@ addons:
       - protobuf-compiler
       - protobuf-c-compiler
       - libprotobuf-dev
-      - libyaml-cpp0.5
-      - libyaml-cpp-dev
-      - libarchive13
       - libarchive-dev
       - qt5-default
+
+install:
+  - git clone https://github.com/jbeder/yaml-cpp.git yaml
+  - pushd yaml
+  - cmake -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_SHARED_LIBS=ON .
+  - make -j2
+  - sudo make install
+  - sudo install -Dm644 yaml-cpp-config.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-config.cmake
+  - sudo install -Dm644 yaml-cpp-config-version.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-config-version.cmake
+  - sudo install -Dm644 yaml-cpp-targets.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-targets.cmake
 
 script:
   - cmake .
