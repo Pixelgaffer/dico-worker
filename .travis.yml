@@ -24,6 +24,7 @@ install:
   - sudo install -Dm644 yaml-cpp-config.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-config.cmake
   - sudo install -Dm644 yaml-cpp-config-version.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-config-version.cmake
   - sudo install -Dm644 yaml-cpp-targets.cmake /usr/lib/cmake/yaml-cpp/yaml-cpp-targets.cmake
+  - popd
 
 script:
   - cmake .
