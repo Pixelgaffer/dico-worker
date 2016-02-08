@@ -1,3 +1,5 @@
+#include "code.h"
+
 #include <error.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -6,6 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <bitset>
 #include <iostream>
 #include <string>
 using namespace std;
@@ -13,6 +16,7 @@ using namespace std;
 #include <do-task.pb.h>
 #include <handshake.pb.h>
 #include <self-describing-message.pb.h>
+#include <submit-code.pb.h>
 using namespace dicoprotos;
 
 template<typename MessageType>
@@ -91,7 +95,8 @@ int main(int argc, char **argv)
 	
 	while (true)
 	{
-		int len = 0;
+		uint32_t len = 0;
+		char *lenarr = (char*) &len;
 		char p, *buf = 0;
 		int read;
 		for (int i = 0; i<4 || len>i-4; i++)
@@ -103,23 +108,37 @@ int main(int argc, char **argv)
 			}
 			if (i < 4)
 			{
-				len = len | (p << (24 - 8*i));
+				cout << "p: " << bitset<32>(p << (24 - 8*i)) << endl;
+				lenarr[3-i] = p;
+				cout << "l: " << bitset<32>(len) << endl;
 				continue;
 			}
 			
 			if (!buf)
+			{
+				cout << "allocing char buf of " << len << endl;
 				buf = new char[len];
+				cout << "done" << endl;
+			}
 			buf[i-4] = p;
 		}
 		
 		SelfDescribingMessage sdm;
 		sdm.ParseFromArray(buf, len);
+		cout << "received some message" << endl;
 		switch (sdm.type())
 		{
 		case SelfDescribingMessage::DO_TASK: {
 				DoTask task;
 				task.ParseFromString(sdm.data());
 				cout << "received task with id " << task.id() << endl;
+			}
+			break;
+		case SelfDescribingMessage::SUBMIT_CODE: {
+				SubmitCode sc;
+				sc.ParseFromString(sdm.data());
+				cout << "received code with hash " << sc.hash() << endl;
+				Code c(sc);
 			}
 			break;
 		default:
