@@ -16,6 +16,7 @@ addons:
       - libyaml-cpp-dev
       - libarchive13
       - libarchive-dev
+      - qt5-default
 
 script:
   - cmake .
