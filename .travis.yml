@@ -4,13 +4,18 @@ compiler:
   - clang
   - gcc
 
-sudo: false
+sudo: required
+dist: trusty
 addons:
   apt:
     packages:
       - protobuf-compiler
       - protobuf-c-compiler
       - libprotobuf-dev
+      - libyaml-cpp0.5
+      - libyaml-cpp-dev
+      - libarchive13
+      - libarchive-dev
 
 script:
   - cmake .
